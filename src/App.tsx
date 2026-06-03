@@ -58,6 +58,8 @@ const vehicles = [
     icon: "bike",
   },
 ];
+const API_URL =
+  "https://fuel-tracker-y5s4.onrender.com/api";
 
 const tabs = [
   { id: "Dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -158,7 +160,7 @@ export default function App() {
   const handleLogin = async () => {
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/login",
+        `${API_URL}/login`,
         {
           email,
           password,
@@ -182,7 +184,7 @@ export default function App() {
   const fetchEntries = async () => {
     try {
       const response = await axios.get(
-        "http://127.0.0.1:8000/api/fuel-entries",
+        `${API_URL}/fuel-entries`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -210,7 +212,7 @@ export default function App() {
   const handleAddEntry = async () => {
     try {
       await axios.post(
-        "http://127.0.0.1:8000/api/fuel-entries",
+        `${API_URL}/fuel-entries`,
         {
           vehicle_name:
             vehicles.find(
@@ -392,226 +394,227 @@ export default function App() {
 
       <main className="max-w-7xl mx-auto p-6">
 
-        <div className="grid grid-cols-4 gap-4 mb-6">
+  {activeTab === "Dashboard" && (
+    <div className="grid grid-cols-4 gap-4">
+      <StatCard
+        label="Total Fuel"
+        value={`${totalFuel.toFixed(1)} L`}
+        icon={<Fuel size={20} />}
+        color="bg-blue-100"
+      />
 
-          <StatCard
-            label="Total Fuel"
-            value={`${totalFuel.toFixed(1)} L`}
-            icon={<Fuel size={20} />}
-            color="bg-blue-100"
-          />
+      <StatCard
+        label="Total Cost"
+        value={`$${totalCost.toFixed(2)}`}
+        icon={<DollarSign size={20} />}
+        color="bg-orange-100"
+      />
 
-          <StatCard
-            label="Total Cost"
-            value={`$${totalCost.toFixed(2)}`}
-            icon={<DollarSign size={20} />}
-            color="bg-orange-100"
-          />
+      <StatCard
+        label="Average Cost/L"
+        value={`$${avgCostPerLiter.toFixed(2)}`}
+        icon={<Gauge size={20} />}
+        color="bg-green-100"
+      />
 
-          <StatCard
-            label="Average Cost/L"
-            value={`$${avgCostPerLiter.toFixed(
-              2
-            )}`}
-            icon={<Gauge size={20} />}
-            color="bg-green-100"
-          />
+      <StatCard
+        label="Entries"
+        value={`${fuelEntries.length}`}
+        icon={<TrendingUp size={20} />}
+        color="bg-purple-100"
+      />
+    </div>
+  )}
 
-          <StatCard
-            label="Entries"
-            value={`${fuelEntries.length}`}
-            icon={<TrendingUp size={20} />}
-            color="bg-purple-100"
-          />
-        </div>
+  {activeTab === "Add Entry" && (
+    <Card className="p-6">
+      <h2 className="text-lg font-semibold mb-4">
+        Add Fuel Entry
+      </h2>
 
-        <Card className="p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">
-            Add Fuel Entry
-          </h2>
+      <div className="grid grid-cols-2 gap-4">
+        <input
+          type="date"
+          name="date"
+          value={formData.date}
+          onChange={handleInput}
+          className="border rounded-md px-3 py-2"
+        />
 
-          <div className="grid grid-cols-2 gap-4">
+        <select
+          name="vehicleId"
+          value={formData.vehicleId}
+          onChange={handleInput}
+          className="border rounded-md px-3 py-2"
+        >
+          {vehicles.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name}
+            </option>
+          ))}
+        </select>
 
-            <input
-              type="date"
-              name="date"
-              value={formData.date}
-              onChange={handleInput}
-              className="border rounded-md px-3 py-2"
-            />
+        <input
+          type="number"
+          name="fuelAmount"
+          placeholder="Fuel Amount"
+          value={formData.fuelAmount}
+          onChange={handleInput}
+          className="border rounded-md px-3 py-2"
+        />
 
-            <select
-              name="vehicleId"
-              value={formData.vehicleId}
-              onChange={handleInput}
-              className="border rounded-md px-3 py-2"
+        <input
+          type="number"
+          name="cost"
+          placeholder="Cost"
+          value={formData.cost}
+          onChange={handleInput}
+          className="border rounded-md px-3 py-2"
+        />
+
+        <input
+          type="number"
+          name="odometer"
+          placeholder="Odometer"
+          value={formData.odometer}
+          onChange={handleInput}
+          className="border rounded-md px-3 py-2"
+        />
+      </div>
+
+      <button
+        onClick={handleAddEntry}
+        className="mt-5 bg-blue-600 text-white px-5 py-3 rounded-md"
+      >
+        Add Entry
+      </button>
+    </Card>
+  )}
+
+  {activeTab === "Analytics" && (
+    <div className="grid grid-cols-2 gap-6">
+
+      <Card className="p-6">
+        <h2 className="font-semibold mb-4">
+          Fuel Distribution
+        </h2>
+
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={fuelByVehicle}
+              dataKey="value"
+              cx="50%"
+              cy="50%"
+              outerRadius={100}
             >
-              {vehicles.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="number"
-              name="fuelAmount"
-              placeholder="Fuel Amount"
-              value={formData.fuelAmount}
-              onChange={handleInput}
-              className="border rounded-md px-3 py-2"
-            />
-
-            <input
-              type="number"
-              name="cost"
-              placeholder="Cost"
-              value={formData.cost}
-              onChange={handleInput}
-              className="border rounded-md px-3 py-2"
-            />
-
-            <input
-              type="number"
-              name="odometer"
-              placeholder="Odometer"
-              value={formData.odometer}
-              onChange={handleInput}
-              className="border rounded-md px-3 py-2"
-            />
-          </div>
-
-          <button
-            onClick={handleAddEntry}
-            className="mt-5 bg-blue-600 text-white px-5 py-3 rounded-md flex items-center gap-2 hover:bg-blue-700"
-          >
-            <Plus size={18} />
-            Add Entry
-          </button>
-        </Card>
-
-        <Card className="mb-6">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="p-3 text-left">
-                    Date
-                  </th>
-                  <th className="p-3 text-left">
-                    Vehicle
-                  </th>
-                  <th className="p-3 text-left">
-                    Fuel
-                  </th>
-                  <th className="p-3 text-left">
-                    Cost
-                  </th>
-                  <th className="p-3 text-left">
-                    Odometer
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filteredEntries.map((entry) => (
-                  <tr
-                    key={entry.id}
-                    className="border-t"
-                  >
-                    <td className="p-3">
-                      {entry.date}
-                    </td>
-
-                    <td className="p-3">
-                      {entry.vehicle_name}
-                    </td>
-
-                    <td className="p-3">
-                      {entry.fuel_amount} L
-                    </td>
-
-                    <td className="p-3">
-                      ${entry.cost}
-                    </td>
-
-                    <td className="p-3">
-                      {entry.odometer}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
-        <div className="grid grid-cols-2 gap-6">
-
-          <Card className="p-6">
-            <h2 className="font-semibold mb-4">
-              Fuel Distribution
-            </h2>
-
-            <ResponsiveContainer
-              width="100%"
-              height={300}
-            >
-              <PieChart>
-                <Pie
-                  data={fuelByVehicle}
-                  dataKey="value"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                >
-                  {fuelByVehicle.map((_, i) => (
-                    <Cell
-                      key={i}
-                      fill={
-                        CHART_COLORS[
-                          i % CHART_COLORS.length
-                        ]
-                      }
-                    />
-                  ))}
-                </Pie>
-
-                <Tooltip />
-
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </Card>
-
-          <Card className="p-6">
-            <h2 className="font-semibold mb-4">
-              Cost per Liter Trend
-            </h2>
-
-            <ResponsiveContainer
-              width="100%"
-              height={300}
-            >
-              <LineChart data={analyticsData}>
-                <CartesianGrid strokeDasharray="3 3" />
-
-                <XAxis dataKey="date" />
-
-                <YAxis />
-
-                <Tooltip />
-
-                <Legend />
-
-                <Line
-                  type="monotone"
-                  dataKey="cost"
-                  stroke="#3b82f6"
+              {fuelByVehicle.map((_, i) => (
+                <Cell
+                  key={i}
+                  fill={
+                    CHART_COLORS[
+                      i % CHART_COLORS.length
+                    ]
+                  }
                 />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
-        </div>
+              ))}
+            </Pie>
+
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      </Card>
+
+      <Card className="p-6">
+        <h2 className="font-semibold mb-4">
+          Cost per Liter Trend
+        </h2>
+
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={analyticsData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+
+            <Line
+              type="monotone"
+              dataKey="cost"
+              stroke="#3b82f6"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </Card>
+
+    </div>
+  )}
+
+  {activeTab === "History" && (
+    <Card>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-3">Date</th>
+              <th className="p-3">Vehicle</th>
+              <th className="p-3">Fuel</th>
+              <th className="p-3">Cost</th>
+              <th className="p-3">Odometer</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {fuelEntries.map((entry) => (
+              <tr key={entry.id}>
+                <td className="p-3">{entry.date}</td>
+                <td className="p-3">{entry.vehicle_name}</td>
+                <td className="p-3">{entry.fuel_amount}</td>
+                <td className="p-3">${entry.cost}</td>
+                <td className="p-3">{entry.odometer}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  )}
+
+  {activeTab === "Reports" && (
+    <Card className="p-6">
+      <h2 className="text-xl font-bold mb-4">
+        Reports
+      </h2>
+
+      <p>Total Fuel Used: {totalFuel.toFixed(2)} L</p>
+      <p>Total Cost: ${totalCost.toFixed(2)}</p>
+      <p>Average Cost/L: ${avgCostPerLiter.toFixed(2)}</p>
+    </Card>
+  )}
+
+  {activeTab === "Export" && (
+    <Card className="p-6">
+      <h2 className="text-xl font-bold mb-4">
+        Export Data
+      </h2>
+
+      <button className="bg-green-600 text-white px-4 py-2 rounded">
+        Export CSV
+      </button>
+    </Card>
+  )}
+
+  {activeTab === "Settings" && (
+    <Card className="p-6">
+      <h2 className="text-xl font-bold mb-4">
+        Settings
+      </h2>
+
+      <p>Application settings will appear here.</p>
+    </Card>
+  )}
+
       </main>
     </div>
   );
