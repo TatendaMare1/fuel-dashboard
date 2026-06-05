@@ -35,31 +35,9 @@ import {
   Cell,
 } from "recharts";
 
-const vehicles = [
-  {
-    id: 1,
-    name: "Honda Civic 2022",
-    type: "Sedan",
-    fuelType: "Gasoline",
-    icon: "car",
-  },
-  {
-    id: 2,
-    name: "Ford F-150 2021",
-    type: "Truck",
-    fuelType: "Diesel",
-    icon: "truck",
-  },
-  {
-    id: 3,
-    name: "Yamaha MT-07",
-    type: "Motorcycle",
-    fuelType: "Gasoline",
-    icon: "bike",
-  },
-];
 const API_URL =
   "https://fuel-tracker-y5s4.onrender.com/api";
+
 
 const tabs = [
   { id: "Dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -126,6 +104,15 @@ function StatCard({
 }
 
 export default function App() {
+
+  const [vehicles, setVehicles] = useState<any[]>([]);
+
+  const [vehicleForm, setVehicleForm] = useState({
+  name: "",
+  type: "",
+  fuel_type: "",
+});
+
   const [token, setToken] = useState(
     localStorage.getItem("token") || ""
   );
@@ -151,12 +138,81 @@ export default function App() {
     vehicleId: 1,
   });
 
-  useEffect(() => {
-    if (token) {
-      fetchEntries();
-    }
-  }, [token]);
+  const fetchVehicles = async () => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/vehicles`
+    );
 
+    setVehicles(response.data);
+  } catch (error) {
+    console.error("Failed to load vehicles", error);
+  }
+};
+
+  const handleAddVehicle = async () => {
+  try {
+    await axios.post(
+      `${API_URL}/vehicles`,
+      {
+        name: vehicleForm.name,
+        type: vehicleForm.type,
+        fuel_type: vehicleForm.fuel_type,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    alert("Vehicle added!");
+
+    setVehicleForm({
+      name: "",
+      type: "",
+      fuel_type: "",
+    });
+
+    fetchVehicles();
+  } catch (error) {
+    console.error(error);
+    alert("Failed to add vehicle");
+  }
+};
+  
+
+  useEffect(() => {
+  if (token) {
+    fetchEntries();
+    fetchVehicles();
+  }
+}, [token]);
+
+  const fetchMonthlySpend = async () => {
+  const response = await axios.get(
+    `${API_URL}/reports/monthly-spend`
+  );
+
+  console.log(response.data);
+};
+
+  const fetchFuelConsumption = async () => {
+  const response = await axios.get(
+    `${API_URL}/reports/fuel-consumption`
+  );
+
+  console.log(response.data);
+};
+
+  const fetchVehicleSummary = async () => {
+  const response = await axios.get(
+    `${API_URL}/reports/vehicle-summary`
+  );
+
+  console.log(response.data);
+};
+ 
   const handleLogin = async () => {
     try {
       const response = await axios.post(
@@ -216,7 +272,7 @@ export default function App() {
         {
           vehicle_name:
             vehicles.find(
-              (v) => v.id == formData.vehicleId
+              (v: any) => v.id == formData.vehicleId
             )?.name || "",
 
           date: formData.date,
@@ -254,6 +310,53 @@ export default function App() {
       alert("Failed to save entry");
     }
   };
+  const handleUpdateEntry = async (id: number) => {
+  try {
+    await axios.put(
+      `${API_URL}/fuel-records/${id}`,
+      {
+        date: formData.date,
+        fuel_amount: Number(formData.fuelAmount),
+        cost: Number(formData.cost),
+        odometer: Number(formData.odometer),
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    alert("Record updated!");
+
+    fetchEntries();
+  } catch (error) {
+    console.error(error);
+    alert("Failed to update record");
+  }
+};
+  const handleDelete = async (id) => {
+  // Optional: Ask the user for confirmation before deleting
+  if (window.confirm("Are you sure you want to delete this record?")) {
+    try {
+      // Your Axios delete request
+      await axios.delete(`${API_URL}/fuel-records/${id}`);
+      
+      // OPTIONAL: Refresh your frontend state so the item disappears immediately
+      // Example: setFuelRecords(fuelRecords.filter(record => record.id !== id));
+      
+      alert("Record deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting record:", error);
+      alert("Failed to delete the record. Please try again.");
+    }
+  }
+};
+  const exportCSV = () => {
+  window.open(
+    `${API_URL}/export/csv`
+  );
+};
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -556,26 +659,45 @@ export default function App() {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3">Date</th>
-              <th className="p-3">Vehicle</th>
-              <th className="p-3">Fuel</th>
-              <th className="p-3">Cost</th>
-              <th className="p-3">Odometer</th>
-            </tr>
-          </thead>
+  <tr>
+    <th className="p-3">Date</th>
+    <th className="p-3">Vehicle</th>
+    <th className="p-3">Fuel</th>
+    <th className="p-3">Cost</th>
+    <th className="p-3">Odometer</th>
+    <th className="p-3">Actions</th>
+  </tr>
+</thead>
 
           <tbody>
-            {fuelEntries.map((entry) => (
-              <tr key={entry.id}>
-                <td className="p-3">{entry.date}</td>
-                <td className="p-3">{entry.vehicle_name}</td>
-                <td className="p-3">{entry.fuel_amount}</td>
-                <td className="p-3">${entry.cost}</td>
-                <td className="p-3">{entry.odometer}</td>
-              </tr>
-            ))}
-          </tbody>
+  {fuelEntries.map((entry) => (
+    <tr key={entry.id}>
+      <td className="p-3">{entry.date}</td>
+      <td className="p-3">{entry.vehicle_name}</td>
+      <td className="p-3">{entry.fuel_amount}</td>
+      <td className="p-3">${entry.cost}</td>
+      <td className="p-3">{entry.odometer}</td>
+
+      <td className="p-3">
+        <button
+          onClick={() => handleUpdateEntry(entry.id)}
+          className="bg-blue-500 text-white px-3 py-1 rounded"
+        >
+          Edit
+        </button>
+      </td>
+      <td className="p-3 text-sm text-right">
+      <button
+        onClick={() => handleDelete(entry.id)}
+        className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+        title="Delete Entry"
+      >
+        🗑️ Delete
+      </button>
+    </td>
+    </tr>
+  ))}
+</tbody>
         </table>
       </div>
     </Card>
@@ -599,21 +721,89 @@ export default function App() {
         Export Data
       </h2>
 
-      <button className="bg-green-600 text-white px-4 py-2 rounded">
-        Export CSV
-      </button>
+      <button onClick={exportCSV}>
+ Export CSV
+</button>
     </Card>
   )}
 
   {activeTab === "Settings" && (
-    <Card className="p-6">
-      <h2 className="text-xl font-bold mb-4">
-        Settings
-      </h2>
+  <Card className="p-6">
 
-      <p>Application settings will appear here.</p>
-    </Card>
-  )}
+    <h2 className="text-xl font-bold mb-6">
+      Vehicle Management
+    </h2>
+
+    <div className="space-y-4">
+
+      <input
+        type="text"
+        placeholder="Vehicle Name"
+        value={vehicleForm.name}
+        onChange={(e) =>
+          setVehicleForm({
+            ...vehicleForm,
+            name: e.target.value,
+          })
+        }
+        className="w-full border rounded-md px-3 py-2"
+      />
+
+      <input
+        type="text"
+        placeholder="Vehicle Type"
+        value={vehicleForm.type}
+        onChange={(e) =>
+          setVehicleForm({
+            ...vehicleForm,
+            type: e.target.value,
+          })
+        }
+        className="w-full border rounded-md px-3 py-2"
+      />
+
+      <input
+        type="text"
+        placeholder="Fuel Type"
+        value={vehicleForm.fuel_type}
+        onChange={(e) =>
+          setVehicleForm({
+            ...vehicleForm,
+            fuel_type: e.target.value,
+          })
+        }
+        className="w-full border rounded-md px-3 py-2"
+      />
+
+      <button
+        onClick={handleAddVehicle}
+        className="bg-blue-600 text-white px-4 py-2 rounded"
+      >
+        Add Vehicle
+      </button>
+
+    </div>
+
+    <hr className="my-6" />
+
+    <h3 className="font-bold mb-3">
+      Existing Vehicles
+    </h3>
+
+    {vehicles.map((vehicle) => (
+      <div
+        key={vehicle.id}
+        className="border p-3 rounded mb-2"
+      >
+        <div>{vehicle.name}</div>
+        <div className="text-sm text-gray-500">
+          {vehicle.type} | {vehicle.fuel_type}
+        </div>
+      </div>
+    ))}
+
+  </Card>
+)}
 
       </main>
     </div>
