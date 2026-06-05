@@ -335,7 +335,7 @@ export default function App() {
     alert("Failed to update record");
   }
 };
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
   // Optional: Ask the user for confirmation before deleting
   if (window.confirm("Are you sure you want to delete this record?")) {
     try {
